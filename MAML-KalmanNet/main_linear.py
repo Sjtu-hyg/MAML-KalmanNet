@@ -27,7 +27,7 @@ def main(args):
                               q_query=args.q_qry,
                               data_path=path_data,
                               Is_GenData=True,
-                              use_cuda=args.use_cuda)
+                              use_cuda=args.use_cuda)  #调用就会产生训练和测试数据
 
     maml = Meta(args, db_train, is_linear_net=True)
 

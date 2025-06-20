@@ -28,7 +28,8 @@ class Learner(nn.Module):
         self.gru_hidden_dim = 4 * (x_dim**2 + y_dim**2)
 
         self.hn_train_init = torch.randn(self.gru_n_layer, args.batch_size, self.gru_hidden_dim).to(self.device)
-        self.hn_qry_init = torch.randn(self.gru_n_layer, args.q_qry, self.gru_hidden_dim).to(self.device)
+        # self.hn_qry_init = torch.randn(self.gru_n_layer, args.q_qry, self.gru_hidden_dim).to(self.device)
+        self.hn_qry_init = torch.randn(self.gru_n_layer, 60, self.gru_hidden_dim).to(self.device)
 
         self.GRU = nn.GRU(input_size=l1_hidden, hidden_size=self.gru_hidden_dim, num_layers=self.gru_n_layer)
 

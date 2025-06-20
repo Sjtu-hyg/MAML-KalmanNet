@@ -16,7 +16,7 @@ This ensures that the generated tasks are diverse enough for effective meta-trai
 
 Since the code is not fully adapted to CUDA, it is recommended to set `use_cuda = False` when generating data and then use CUDA to train the model.
 
-There are main files simulating the UCM system and the UZH FPV systems, respectively. We have saved the trained model in `Model/model_name/basenet.pt`.
+There are main files simulating the UCM(Uniform Circular Motion匀速圆周运动) system and the UZH FPV(first-person-view)(https://fpv.ifi.uzh.ch/)(无人机赛车数据集) systems, respectively. We have saved the trained model in `Model/model_name/basenet.pt`.
 
 ### UCM (Linear Model or Non-linear Model)
 

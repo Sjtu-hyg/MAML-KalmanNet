@@ -26,7 +26,7 @@ def main(args):
                               k_shot_test=args.k_spt_test,
                               q_query=args.q_qry,
                               data_path=path_data,
-                              Is_GenData=True,
+                              Is_GenData=False,
                               use_cuda=args.use_cuda,
                               Is_linear=False)
 
@@ -37,14 +37,18 @@ def main(args):
     print(maml)
     print('Total trainable tensors:', num)
 
+    weights = torch.load('./MAML_data/nonlinear/train/weights.pt')
+    weights = torch.tensor(weights, device=device)
+
     for step in range(args.epoch):
         state_spt, obs_spt, state_qry, obs_qry, select_num = db_train.next()
         state_spt, obs_spt, state_qry, obs_qry = torch.from_numpy(state_spt), torch.from_numpy(obs_spt), \
             torch.from_numpy(state_qry), torch.from_numpy(obs_qry)
+        epoch_weights = weights[select_num]
         state_spt, obs_spt, state_qry, obs_qry = state_spt.to(device), obs_spt.to(device), state_qry.to(device), obs_qry.to(device)
 
         if step <= args.epoch / 2:
-            loss_dB, count_num = maml(state_spt, obs_spt, state_qry, obs_qry)
+            loss_dB, count_num = maml(state_spt, obs_spt, state_qry, obs_qry, epoch_weights)
         else:
             loss_dB, count_num = maml.forward_second(state_spt, obs_spt, state_qry, obs_qry)
 
