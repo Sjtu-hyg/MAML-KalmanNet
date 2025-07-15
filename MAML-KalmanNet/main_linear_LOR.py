@@ -2,6 +2,7 @@ import torch
 import math
 import numpy as np
 import argparse
+import os
 from meta import Meta
 from Simulations.LOR.LOR_sysmdl import SystemModel
 
@@ -90,10 +91,13 @@ def main(args):
     # print(f"Average loss (dB): {avg_loss_dB:.4f}")
     # ive-KNet-ICASSP24-main\simulations\Lorenz_Atractor\data_nonlinear_imm\linear_gaussian_imm
     DatafolderName = 'MAML_data/LOR/test' + '/'
-    dataFileName = [f'data_lor_v10_r0.010_T100_linear_gaussian_f_initial_x0_p0_pretrained_noise-shift.pt']
+    r2 = torch.tensor([10])
+    dataFileName = [f'data_lor_v10_r{r2.item():.3f}_T100_linear_gaussian_f_initial_x0_p0_pretrained_noise-shift.pt']
     [train_input_long, train_target_long, cv_input, cv_target, test_input, test_target, train_init, cv_init,
      test_init] = torch.load(DatafolderName + dataFileName[0], map_location=device)
-    state, obs = test_target[0:60], test_input[0:60] # [batch_size, 3, 100]
+    # state, obs = test_target[0:60], test_input[0:60] # [batch_size, 3, 100]
+    state, obs = test_target, test_input  # [batch_size, 3, 100]
+    #readme: 注意 from state_dict_learner import Learner 中line32要修改成test_input的batchsize大小
     mse_arr, mse_avg, mse_dB, x_out, t, mse_time = maml.forward_test(state.to(device), obs.to(device))
     # 1) 转成 torch.Tensor
     mse_arr_t = torch.from_numpy(mse_arr)  # [batch]
@@ -101,7 +105,15 @@ def main(args):
     mse_dB_t = torch.tensor(mse_dB)  # scalar
     x_out_t = torch.from_numpy(x_out)  # [batch, x_dim, seq_len-1]
     t_t = torch.from_numpy(t)  # [seq_len-1]
-    mse_time_t = torch.from_numpy(mse_time)  # [seq_len-1]
+    mse_time_t = torch.from_numpy(mse_time)  # [batch, seq_len-1]
+
+    # 提取倒数第 3 和第 7 的值
+    last_3 = mse_time_t[:, -3]  # [batch]
+    last_7 = mse_time_t[:, -7]  # [batch]
+
+    # 填充最后两维
+    fill_values = torch.stack([last_3, last_7], dim=1)  # [batch, 2]
+    mse_time_extended = torch.cat([mse_time_t, fill_values], dim=1)  # [batch, seq_len]
 
     # 2) 保存
     save_dict = {
@@ -110,12 +122,14 @@ def main(args):
         'mse_dB': mse_dB_t,
         'x_out': x_out_t,
         't': t_t,
-        'mse_time': mse_time_t,
+        'mse_time': mse_time_extended,
     }
-    save_path = './MAML_data/LOR/test_results.pth'
+    filename = f'test_results_r{r2.item():.3f}.pth'
+    save_path = './MAML_data/LOR/'
+    save_path = os.path.join(save_path, filename)
     torch.save(save_dict, save_path)
     print(f"Saved test results to {save_path}")
-    print(f"Average test MSE(dB): {mse_dB:.4f}")
+    # print(f"Average test MSE(dB): {mse_dB:.4f}")
 if __name__ == '__main__':
 
     argparser = argparse.ArgumentParser()

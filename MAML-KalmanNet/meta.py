@@ -5,6 +5,7 @@ from torch import nn
 from torch import optim
 from state_dict_learner import Learner
 from filter import Filter as Filter
+import time
 
 class Meta(nn.Module):
 
@@ -244,6 +245,7 @@ class Meta(nn.Module):
 
         # 关掉梯度计算
         with torch.no_grad():
+            start = time.time()
             # 用新的 reset_test 来按 batch 大小初始化 Filter
             self.my_filter.reset_test(batch_size)
             # 2) 初始化 Learner (GRU) 隐状态
@@ -254,6 +256,10 @@ class Meta(nn.Module):
                 self.my_filter.filtering(y_k, task_net=self.base_net)
                 # self.my_filter.compute_x_post_test(state, obs, task_net=self.base_net)
 
+            end = time.time()
+            runtime = end - start
+
+            print("Inference Time:", runtime)
             # 从滤波器中取出整条历史轨迹，丢掉初始值
             # state_history: [batch, x_dim, seq_len]
             x_hist = self.my_filter.state_history[:, :, 2:]         # [batch, x_dim, seq_len-1]
@@ -269,11 +275,22 @@ class Meta(nn.Module):
             MSE_test_linear_avg = float(MSE_test_linear_arr.mean())
             MSE_test_dB_avg    = 10.0 * np.log10(MSE_test_linear_avg)
 
+            # Standard deviation
+
+            MSE_test_linear_std = np.std(MSE_test_linear_arr)
+
+            # Confidence interval
+            test_std_dB = 10 * np.log10(
+                MSE_test_linear_std + MSE_test_linear_avg) - MSE_test_dB_avg
+
             # 时间步索引
             t = np.arange(1, seq_len)
             # 按时间步对 MSE 求批平均
-            MSE_time_avg = MSE_time.mean(dim=0).cpu().numpy()           # [seq_len-1]
+            # MSE_time_avg = MSE_time.mean(dim=0).cpu().numpy()           # [seq_len-1]
+            MSE_time_avg = MSE_time.cpu().numpy()  # [batch, seq_len-1]
 
+            print("MAML_KalmanNet MSE Test in dB:", MSE_test_dB_avg)
+            print("MAML_KalmanNet STD Test in dB:", test_std_dB)
         return [
             MSE_test_linear_arr,
             MSE_test_linear_avg,
